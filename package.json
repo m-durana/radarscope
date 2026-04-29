@@ -18,6 +18,10 @@
       "types": "./src/svelte/index.ts",
       "svelte": "./src/svelte/index.ts",
       "import": "./dist/svelte/index.js"
+    },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "import": "./dist/data/index.js"
     }
   },
   "scripts": {

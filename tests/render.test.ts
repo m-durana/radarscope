@@ -7,7 +7,7 @@ describe('buildScopeScene + renderToString', () => {
     aircraft: [
       { id: 'a', callsign: 'AAL123', pos: { x: 5, y: -5 }, heading: 90, altitude: 18000, speed: 280 },
     ],
-    runway: { threshold: { x: 0, y: 0 }, heading: 270 },
+    runways: [{ threshold: { x: 0, y: 0 }, heading: 270, showFinal: true }],
     rangeNm: 30,
   };
 
@@ -23,6 +23,33 @@ describe('buildScopeScene + renderToString', () => {
     expect(out).toContain('AAL123');
     expect(out).toContain('FL180');
     expect(out.endsWith('</svg>')).toBe(true);
+  });
+
+  it('renders multiple runways with active styling on showFinal', () => {
+    const out = renderToString(
+      buildScopeScene({
+        aircraft: [],
+        runways: [
+          { threshold: { x: 0, y: 0 }, heading: 90 },
+          { threshold: { x: 0, y: 0.2 }, heading: 90, showFinal: true },
+          { threshold: { x: 0, y: -0.2 }, heading: 90 },
+        ],
+        rangeNm: 30,
+      }),
+    );
+    expect(out).toContain('runway-active');
+    expect(out).toContain('runway-inactive');
+  });
+
+  it('back-compat: scenario.runway (singular) still renders', () => {
+    const out = renderToString(
+      buildScopeScene({
+        aircraft: [],
+        runway: { threshold: { x: 0, y: 0 }, heading: 90, showFinal: true },
+        rangeNm: 30,
+      }),
+    );
+    expect(out).toContain('runway-active');
   });
 
   it('escapes special characters in tag text', () => {

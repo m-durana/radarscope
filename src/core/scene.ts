@@ -39,7 +39,11 @@ export function buildScopeScene(scenario: Scenario, opts: ScopeOptions = {}): Sv
 
   const children: SvgNode[] = [];
   children.push(buildScopeFrame(range, rings));
-  if (scenario.runway) children.push(buildRunway(scenario.runway));
+  // Render runways: prefer the new `runways` array; fall back to legacy singular `runway`.
+  const runways = scenario.runways ?? (scenario.runway ? [scenario.runway] : []);
+  // Inactive first, active (showFinal) last so the active line draws on top.
+  const sortedRunways = [...runways].sort((a, b) => Number(!!a.showFinal) - Number(!!b.showFinal));
+  for (const rw of sortedRunways) children.push(buildRunway(rw));
   for (const wp of scenario.waypoints ?? []) children.push(buildWaypoint(wp));
   for (const ac of scenario.aircraft) {
     children.push(buildAircraftBlip(ac, {
@@ -197,29 +201,45 @@ export function buildAircraftBlip(ac: Aircraft, opts: BlipOptions = {}): SvgNode
 export function buildRunway(rw: Runway): SvgNode {
   const len = rw.lengthNm ?? 0.6;
   const fwd = headingToVector(rw.heading, len);
-  const finalCourseLen = 12; // nm — extended centerline
-  const finalCourse = headingToVector((rw.heading + 180) % 360, finalCourseLen);
+  const showFinal = rw.showFinal ?? false;
 
-  return el('g', { class: 'runway' }, [
-    el('line', {
-      x1: rw.threshold.x,
-      y1: rw.threshold.y,
-      x2: rw.threshold.x + finalCourse.x,
-      y2: rw.threshold.y + finalCourse.y,
-      stroke: 'var(--scope-final, #6b7480)',
-      'stroke-width': 0.08,
-      'stroke-dasharray': '0.5 0.5',
-    }),
+  // Real ATC scopes (STARS, openScope) draw every runway with the same uniform
+  // thin grey stroke — hierarchy comes from the dashed centerline on the
+  // ACTIVE runway, not from making it thicker. This stops parallel-runway
+  // airports (KORD, KATL, KDFW) from rendering as a chunky stack of bars.
+  const stroke = 'var(--scope-runway, #97a4ab)';
+  const strokeWidth = 0.06;
+
+  const children: SvgNode[] = [];
+  if (showFinal) {
+    const finalCourseLen = 12;
+    const finalCourse = headingToVector((rw.heading + 180) % 360, finalCourseLen);
+    children.push(
+      el('line', {
+        x1: rw.threshold.x,
+        y1: rw.threshold.y,
+        x2: rw.threshold.x + finalCourse.x,
+        y2: rw.threshold.y + finalCourse.y,
+        stroke: 'var(--scope-final, #a3cef1)',
+        'stroke-width': 0.06,
+        'stroke-dasharray': '0.4 0.4',
+        opacity: 0.8,
+      }),
+    );
+  }
+  children.push(
     el('line', {
       x1: rw.threshold.x,
       y1: rw.threshold.y,
       x2: rw.threshold.x + fwd.x,
       y2: rw.threshold.y + fwd.y,
-      stroke: 'var(--scope-runway, #cdd9e2)',
-      'stroke-width': 0.4,
+      stroke,
+      'stroke-width': strokeWidth,
       'stroke-linecap': 'square',
     }),
-  ]);
+  );
+
+  return el('g', { class: showFinal ? 'runway runway-active' : 'runway runway-inactive' }, children);
 }
 
 export function buildWaypoint(wp: Waypoint): SvgNode {

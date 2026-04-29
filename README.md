@@ -4,6 +4,7 @@ Aviation-themed SVG primitives for top-down radar / ATC views: scopes, aircraft 
 
 - **Framework-agnostic core** — zero dependencies, just TypeScript. Geometry helpers (`headingToVector`, `findConflicts`, `interceptAngle`, …) and a scene-graph that renders to a static SVG string.
 - **Svelte 5 adapter** — ergonomic reactive components (`<RadarScope>`, `<AircraftBlip>`, `<RunwayMarker>`, `<Waypoint>`, `<Route>`, `<WindTag>`) that consume the same geometry. Subpath export, opt-in.
+- **Real-world data** — bundled airport + runway data from the public-domain [OurAirports](https://ourairports.com) dataset (~1100 large/medium airports), plus a CSV parser if you want to load the full dataset yourself, plus a starter set of well-known approaches. Subpath export, opt-in.
 - **Themable** — every visual is driven by CSS custom properties (`--scope-bg`, `--scope-blip`, `--scope-conflict`, …) so it slots into your existing palette.
 
 ## Install
@@ -106,6 +107,57 @@ buildAircraftBlip / buildRunway / buildWaypoint / buildWindTag (also exported in
 renderToString(node): string
 ```
 
+### Real-world data (`radarscope/data`)
+
+Bundled subset of [OurAirports](https://ourairports.com) (CC0 public domain), filtered to ~1100 airports: every `large_airport`, plus `medium_airport`s with scheduled service, an IATA code, and a paved runway ≥5000 ft. Each airport carries its full runway data (heading, length, threshold lat/lon).
+
+```ts
+import {
+  // Bundled lookups
+  allAirports,
+  findAirportByIcao,
+  findAirportByIata,
+  airportsByCountry,
+
+  // Geographic ↔ scope projection
+  geoToScope, scopeToGeo, distNmGeo, bearingGeo,
+
+  // CSV parser for OurAirports' full dataset (load it yourself if you need
+  // every airport — the bundled subset covers every commercially-served field).
+  parseCsv,
+  parseOurAirportsAirports,
+  parseOurAirportsRunways,
+  attachRunways,
+
+  // Starter approach set (~18 well-known ILS approaches; minimums/FAF
+  // intentionally undefined — fill those in against authoritative AIPs).
+  allApproaches, approachesByIcao, approachesByRunway,
+} from 'radarscope/data';
+
+// Build a scope centered on a real airport with real runways:
+import { headingToVector } from 'radarscope';
+
+const ksfo = findAirportByIcao('KSFO')!;
+const center = { lat: ksfo.lat, lon: ksfo.lon };
+
+const scenario = {
+  rangeNm: 30,
+  runway: {
+    threshold: geoToScope(center, ksfo.runways[2].le), // 28R landing threshold
+    heading: ksfo.runways[2].he.headingDegT,           // arriving from the east
+  },
+  aircraft: [/* … */],
+};
+```
+
+The `radarscope/data` subpath bundles ~150 KB gzipped of airport JSON. It's a separate entry point, so consumers who don't import it pay nothing.
+
+To refresh the bundled data against the latest OurAirports release:
+
+```sh
+node scripts/fetch-airports.mjs
+```
+
 ### Svelte adapter (`radarscope/svelte`)
 
 ```svelte
@@ -159,6 +211,10 @@ npm run test
 
 Unit tests cover the geometry primitives (the load-bearing math) and the SVG-string renderer.
 
+## Data attribution
+
+Bundled airport + runway data is derived from [OurAirports](https://ourairports.com), released into the public domain (CC0). Re-distributing the bundled JSON is permitted; attributing OurAirports is encouraged.
+
 ## License
 
-MIT
+MIT (the library code). The bundled airport data is CC0 from OurAirports.

@@ -1,0 +1,128 @@
+[
+  {
+    "name": "ILS RWY 09L",
+    "airport": "EGLL",
+    "runway": "09L",
+    "type": "ILS",
+    "finalCourseT": 89.6
+  },
+  {
+    "name": "ILS RWY 27R",
+    "airport": "EGLL",
+    "runway": "27R",
+    "type": "ILS",
+    "finalCourseT": 269.6
+  },
+  {
+    "name": "ILS RWY 06",
+    "airport": "EHAM",
+    "runway": "06",
+    "type": "ILS",
+    "finalCourseT": 58
+  },
+  {
+    "name": "ILS RWY 36R",
+    "airport": "EHAM",
+    "runway": "36R",
+    "type": "ILS",
+    "finalCourseT": 3
+  },
+  {
+    "name": "ILS RWY 09L",
+    "airport": "KATL",
+    "runway": "09L",
+    "type": "ILS",
+    "finalCourseT": 90
+  },
+  {
+    "name": "ILS RWY 27R",
+    "airport": "KATL",
+    "runway": "27R",
+    "type": "ILS",
+    "finalCourseT": 270
+  },
+  {
+    "name": "ILS RWY 16R",
+    "airport": "KDEN",
+    "runway": "16R",
+    "type": "ILS",
+    "finalCourseT": 180.5
+  },
+  {
+    "name": "ILS RWY 04R",
+    "airport": "KJFK",
+    "runway": "04R",
+    "type": "ILS",
+    "finalCourseT": 30.6
+  },
+  {
+    "name": "ILS RWY 13L",
+    "airport": "KJFK",
+    "runway": "13L",
+    "type": "ILS",
+    "finalCourseT": 121
+  },
+  {
+    "name": "ILS RWY 07R",
+    "airport": "KLAX",
+    "runway": "07R",
+    "type": "ILS",
+    "finalCourseT": 83
+  },
+  {
+    "name": "ILS RWY 25L",
+    "airport": "KLAX",
+    "runway": "25L",
+    "type": "ILS",
+    "finalCourseT": 263
+  },
+  {
+    "name": "ILS RWY 10C",
+    "airport": "KORD",
+    "runway": "10C",
+    "type": "ILS",
+    "finalCourseT": 90
+  },
+  {
+    "name": "ILS RWY 28R",
+    "airport": "KORD",
+    "runway": "28R",
+    "type": "ILS",
+    "finalCourseT": 270
+  },
+  {
+    "name": "ILS RWY 28L",
+    "airport": "KSFO",
+    "runway": "28L",
+    "type": "ILS",
+    "finalCourseT": 298
+  },
+  {
+    "name": "ILS RWY 28R",
+    "airport": "KSFO",
+    "runway": "28R",
+    "type": "ILS",
+    "finalCourseT": 298
+  },
+  {
+    "name": "ILS RWY 12L",
+    "airport": "OMDB",
+    "runway": "12L",
+    "type": "ILS",
+    "finalCourseT": 121
+  },
+  {
+    "name": "ILS RWY 30R",
+    "airport": "OMDB",
+    "runway": "30R",
+    "type": "ILS",
+    "finalCourseT": 301
+  },
+  {
+    "name": "ILS RWY 34R",
+    "airport": "RJTT",
+    "runway": "34R",
+    "type": "ILS",
+    "finalCourseT": 330
+  }
+]

@@ -9,6 +9,7 @@ export default defineConfig({
       entry: {
         'core/index': resolve(__dirname, 'src/core/index.ts'),
         'svelte/index': resolve(__dirname, 'src/svelte/index.ts'),
+        'data/index': resolve(__dirname, 'src/data/index.ts'),
       },
       formats: ['es'],
     },

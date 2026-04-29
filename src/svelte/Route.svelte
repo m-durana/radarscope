@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import type { Waypoint } from '../core/types.js';
 
   interface Props {
@@ -8,6 +9,9 @@
   }
 
   let { waypoints, from }: Props = $props();
+
+  const zoomCtx = getContext<{ value: number }>('radarscope:zoom') ?? { value: 1 };
+  const z = $derived(zoomCtx.value);
 
   const points = $derived.by(() => {
     const list = from ? [from, ...waypoints.map((w) => w.pos)] : waypoints.map((w) => w.pos);
@@ -20,8 +24,8 @@
     {points}
     fill="none"
     stroke="var(--scope-route, #6096ba)"
-    stroke-width="0.1"
-    stroke-dasharray="0.6 0.3"
+    stroke-width={0.1 / z}
+    stroke-dasharray="{0.6 / z} {0.3 / z}"
     opacity="0.7"
   />
 {/if}

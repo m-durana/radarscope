@@ -35,6 +35,8 @@ export interface Runway {
   heading: Heading;
   /** Runway length in nm (default 0.6 ≈ 3650 ft). */
   lengthNm?: number;
+  /** Render the dashed extended-centerline for this runway. Default false. */
+  showFinal?: boolean;
 }
 
 export interface Wind {
@@ -52,6 +54,10 @@ export interface Waypoint {
 
 export interface Scenario {
   aircraft: Aircraft[];
+  /** All runways visible in the scope. Set `showFinal: true` on the active one
+   *  to render its extended-centerline / final-approach course. */
+  runways?: Runway[];
+  /** Deprecated singular form — prefer `runways: [...]`. Kept for one release. */
   runway?: Runway;
   waypoints?: Waypoint[];
   wind?: Wind;
