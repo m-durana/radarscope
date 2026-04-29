@@ -7,6 +7,6 @@
     "rootDir": "src",
     "noEmit": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "demo", "tests"]
+  "include": ["src/core/**/*"],
+  "exclude": ["src/**/*.test.ts", "src/svelte/**/*", "demo", "tests"]
 }

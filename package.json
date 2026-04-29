@@ -15,7 +15,7 @@
       "import": "./dist/core/index.js"
     },
     "./svelte": {
-      "types": "./dist/svelte/index.d.ts",
+      "types": "./src/svelte/index.ts",
       "svelte": "./src/svelte/index.ts",
       "import": "./dist/svelte/index.js"
     }
