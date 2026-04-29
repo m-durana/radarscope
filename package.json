@@ -1,0 +1,57 @@
+{
+  "name": "radarscope",
+  "version": "0.1.0",
+  "description": "Aviation-themed SVG primitives: top-down radar scopes, aircraft blips, runways, waypoints. Framework-agnostic core + Svelte 5 adapter.",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src/svelte",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./svelte": {
+      "types": "./dist/svelte/index.d.ts",
+      "svelte": "./src/svelte/index.ts",
+      "import": "./dist/svelte/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite --config vite.demo.config.ts",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "build:demo": "vite build --config vite.demo.config.ts",
+    "preview": "vite preview --config vite.demo.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": "^5"
+  },
+  "peerDependenciesMeta": {
+    "svelte": { "optional": true }
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@tsconfig/svelte": "^5.0.8",
+    "svelte": "^5.55.4",
+    "svelte-check": "^4.4.6",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.10",
+    "vitest": "^4.0.0"
+  },
+  "keywords": [
+    "aviation",
+    "atc",
+    "radar",
+    "svg",
+    "svelte",
+    "ifr",
+    "flight",
+    "air-traffic-control"
+  ]
+}
