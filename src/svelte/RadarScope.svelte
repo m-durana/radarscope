@@ -17,6 +17,14 @@
     /** Min/max zoom multipliers. Defaults: 1× (no zoom-out) to 8×. */
     minZoom?: number;
     maxZoom?: number;
+    /** Predicted-track ("speed") vector length in minutes for child blips.
+     *  Real ATC scopes are controller-toggleable: off / 1 / 2 / 3 min. Set to
+     *  0 to hide. Default 1. Individual blips can override via their own
+     *  `vectorMin` prop. */
+    vectorMin?: number;
+    /** Show the corner toggle UI for cycling vector minutes (off/1/2/3).
+     *  Default true. */
+    showVectorToggle?: boolean;
     /** Children render inside the scope's coordinate system (nm-units). */
     children?: Snippet;
   }
@@ -29,8 +37,19 @@
     zoomable = true,
     minZoom = 1,
     maxZoom = 8,
+    vectorMin: initialVectorMin = 1,
+    showVectorToggle = true,
     children,
   }: Props = $props();
+
+  // svelte-ignore state_referenced_locally — initialVectorMin seeds local state once; subsequent changes are owned by this component.
+  let vectorMin = $state(initialVectorMin);
+  setContext('radarscope:vectorMin', { get value() { return vectorMin; } });
+  function cycleVectorMin() {
+    // Cycle off → 1 → 2 → 3 → off
+    vectorMin = vectorMin >= 3 ? 0 : vectorMin + 1;
+  }
+  const vectorLabel = $derived(vectorMin === 0 ? 'OFF' : `${vectorMin}m`);
 
   const baseRange = $derived(scenario.rangeNm ?? 30);
 
@@ -239,6 +258,16 @@
       <button class="zb reset" onclick={reset} aria-label="Reset zoom" title="Reset" disabled={zoom === 1 && panX === 0 && panY === 0}>⟲</button>
     </div>
   {/if}
+  {#if showVectorToggle}
+    <div class="vec-ui">
+      <button
+        class="zb vec"
+        onclick={cycleVectorMin}
+        aria-label={`Speed vector: ${vectorLabel}. Click to cycle.`}
+        title={`Speed vector: ${vectorLabel} (off / 1 / 2 / 3 min)`}
+      >V {vectorLabel}</button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -263,6 +292,18 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+  }
+  .vec-ui {
+    position: absolute;
+    left: 0.4rem;
+    bottom: 0.4rem;
+  }
+  .zb.vec {
+    width: auto;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    height: 1.6rem;
+    letter-spacing: 0.04em;
   }
   .zb {
     width: 2rem; height: 2rem;

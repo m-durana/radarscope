@@ -20,11 +20,14 @@
   const len = $derived(runway.lengthNm ?? 0.6);
   const fwd = $derived(headingToVector(runway.heading, len));
   const finalCourse = $derived(headingToVector((runway.heading + 180) % 360, finalNm));
-  // Real ATC scopes (STARS / openScope) draw all runways with a single uniform
-  // thin stroke — visual hierarchy comes from the dashed centerline on the
-  // ACTIVE runway, not from making it thicker. Strokes are screen-pixel
-  // constant, so we counter-scale by the parent scope's zoom.
-  const stroke = 'var(--scope-runway, #97a4ab)';
+  // Real ATC scopes (STARS / openScope) draw runways thin, with the active
+  // runway's dashed centerline carrying the visual hierarchy. At terminal
+  // ranges (15-30 nm) a 0.6-nm runway at the original 0.06-stroke barely
+  // renders — too small to tell where the airport is. Default to a stroke
+  // that's still thinner than blips/labels but actually visible, and expose
+  // the color via CSS var so consumers can dial it back. Strokes are
+  // screen-pixel constant, so we counter-scale by zoom.
+  const stroke = 'var(--scope-runway, #c8d3db)';
 </script>
 
 <g class={isActive ? 'runway runway-active' : 'runway runway-inactive'}>
@@ -46,7 +49,7 @@
     x2={runway.threshold.x + fwd.x}
     y2={runway.threshold.y + fwd.y}
     {stroke}
-    stroke-width={0.06 / z}
+    stroke-width={0.14 / z}
     stroke-linecap="square"
   />
 </g>

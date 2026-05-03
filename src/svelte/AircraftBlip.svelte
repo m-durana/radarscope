@@ -7,13 +7,27 @@
     aircraft: Aircraft;
     selected?: boolean;
     conflict?: boolean;
-    /** Heading-vector length in nm. Default 2. */
+    /** Predicted-track ("speed") vector length in minutes of flight. Real ATC
+     *  systems (STARS, ERAM, Eurocat) draw a line projecting forward to where
+     *  the aircraft will be at current speed in N minutes — controller-
+     *  selectable, typically off / 1 / 2 / 3 min. Set to 0 to hide.
+     *  If omitted, falls back to the parent scope's `radarscope:vectorMin`
+     *  context, otherwise defaults to 1. */
+    vectorMin?: number;
+    /** Legacy: explicit vector length in nm. Overrides vectorMin if set. */
     vectorNm?: number;
     /** Click handler (proxied to the blip's hit area). */
     onclick?: (a: Aircraft) => void;
   }
 
-  let { aircraft, selected = false, conflict = false, vectorNm = 2, onclick }: Props = $props();
+  let { aircraft, selected = false, conflict = false, vectorMin, vectorNm, onclick }: Props = $props();
+
+  const vectorMinCtx = getContext<{ value: number }>('radarscope:vectorMin') ?? null;
+  const effMin = $derived(vectorMin ?? vectorMinCtx?.value ?? 1);
+  // Speed in knots × minutes / 60 = nm projected. Falls back to vectorNm if set.
+  const vecLenNm = $derived(
+    vectorNm !== undefined ? vectorNm : Math.max(0, (aircraft.speed * effMin) / 60),
+  );
 
   // Read the parent scope's zoom so cosmetic sizes stay pixel-constant.
   // Real ATC scopes don't scale blips/labels with range; only positions and
@@ -29,7 +43,7 @@
         : 'var(--scope-blip, #a3cef1)',
   );
 
-  const vec = $derived(headingToVector(aircraft.heading, vectorNm));
+  const vec = $derived(headingToVector(aircraft.heading, vecLenNm));
 
   const triangle = $derived.by(() => {
     const triR = 0.6 / z;
@@ -60,16 +74,18 @@
   data-conflict={conflict ? 'true' : 'false'}
   data-selected={selected ? 'true' : 'false'}
 >
-  <line
-    x1={aircraft.pos.x}
-    y1={aircraft.pos.y}
-    x2={aircraft.pos.x + vec.x}
-    y2={aircraft.pos.y + vec.y}
-    {stroke}
-    stroke-width={0.12 / z}
-    stroke-linecap="round"
-    opacity="0.7"
-  />
+  {#if vecLenNm > 0}
+    <line
+      x1={aircraft.pos.x}
+      y1={aircraft.pos.y}
+      x2={aircraft.pos.x + vec.x}
+      y2={aircraft.pos.y + vec.y}
+      {stroke}
+      stroke-width={0.09 / z}
+      stroke-linecap="round"
+      opacity="0.7"
+    />
+  {/if}
   <polygon points={triangle} fill={stroke} {stroke} stroke-width={0.08 / z} />
   <text
     x={aircraft.pos.x + 1 / z}

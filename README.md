@@ -2,8 +2,9 @@
 
 Aviation-themed SVG primitives for top-down radar / ATC views: scopes, aircraft blips, runways, waypoints, wind tags, plus the geometry math you'd otherwise re-derive every project.
 
-- **Framework-agnostic core** — zero dependencies, just TypeScript. Geometry helpers (`headingToVector`, `findConflicts`, `interceptAngle`, …) and a scene-graph that renders to a static SVG string.
+- **Framework-agnostic core** — zero dependencies, just TypeScript. Geometry helpers (`headingToVector`, `findConflicts`, `interceptAngle`, …), instrument math (`clampDots`, `vsiNeedleDeg`, `inHgToHpa`, …), and a scene-graph that renders to a static SVG string.
 - **Svelte 5 adapter** — ergonomic reactive components (`<RadarScope>`, `<AircraftBlip>`, `<RunwayMarker>`, `<Waypoint>`, `<Route>`, `<WindTag>`) that consume the same geometry. Subpath export, opt-in.
+- **IFR cockpit instruments** — composable PFD widgets (`<AttitudeIndicator>`, `<SpeedTape>`, `<AltitudeTape>`, `<VSI>`, `<HeadingTape>`, `<LocalizerScale>`, `<GlideslopeScale>`, `<FMAStrip>`, `<RadioAltimeter>`, plus a layout-only `<PFD>`). Each widget is a self-contained SVG with its own `viewBox` — drop one in anywhere, theme via CSS variables. Subpath export, opt-in.
 - **Real-world data** — bundled airport + runway data from the public-domain [OurAirports](https://ourairports.com) dataset (~1100 large/medium airports), plus a CSV parser if you want to load the full dataset yourself, plus a starter set of well-known approaches. Subpath export, opt-in.
 - **Themable** — every visual is driven by CSS custom properties (`--scope-bg`, `--scope-blip`, `--scope-conflict`, …) so it slots into your existing palette.
 
@@ -172,6 +173,66 @@ node scripts/fetch-airports.mjs
 
 All children render inside the parent `<RadarScope>`'s coordinate system (nm-units), so positions on a `Waypoint` or `AircraftBlip` are passed in nm, not pixels.
 
+### Instruments adapter (`radarscope/instruments`)
+
+Cockpit PFD widgets, framework-agnostic in their math (in core) and rendered via Svelte 5. Each widget is independently mountable — there's no shared SVG context, so you can use just the localizer scale, or the whole composite PFD, or anything in between.
+
+```svelte
+<script lang="ts">
+  import {
+    PFD,
+    AttitudeIndicator, SpeedTape, AltitudeTape, VSI, HeadingTape,
+    LocalizerScale, GlideslopeScale, FMAStrip, RadioAltimeter,
+  } from 'radarscope/instruments';
+</script>
+
+<!-- Drop a single instrument anywhere -->
+<LocalizerScale deviation={0.4} />
+
+<!-- Or the whole PFD -->
+<PFD
+  pitch={-2} roll={0} fd={{ pitch: -2.5, roll: 0 }} slip={0}
+  ias={140} vref={135} selectedSpeed={140} mach={0.32} accelKt={0}
+  alt={1200} selectedAlt={800} baro={29.92} fpm={-700}
+  hdg={265} hdgBug={265} track={267}
+  locDots={0.3} gsDots={-0.4}
+  fma={{ at: 'SPEED', lat: 'LOC', vert: 'G/S', app: 'LAND 3' }}
+  ra={420} da={200}
+/>
+```
+
+**Widgets:**
+
+| Component | Required props | Notable optional |
+|---|---|---|
+| `AttitudeIndicator` | `pitch`, `roll` | `fd` (V-bars), `slip` (g) |
+| `SpeedTape` | `ias` | `vref`, `bugs[]`, `selected`, `mach`, `accelKt` (trend), `vmo` / `vstall` / `vmin` / `vfe` (color bands), `gs` |
+| `AltitudeTape` | `alt`, `baro` | `selectedAlt`, `baroUnit`, `fpm` (trend), `da` / `daSource` (DA tick + alt alert when within 1000 ft) |
+| `VSI` | `fpm` | `selectedFpm` (V/S autopilot reference) |
+| `HeadingTape` | `hdg` | `bug`, `track`, `course` (DTK) |
+| `LocalizerScale` | `deviation` (dots) | — |
+| `GlideslopeScale` | `deviation` (dots) | — |
+| `FMAStrip` | `at`, `lat`, `vert`, `app` | `boxMs` (mode-change outline duration) |
+| `RadioAltimeter` | `ra` (ft AGL) | `da` (turns amber + "MINIMUMS" annunciator below DA) |
+| `PFD` | all of the above | composite, layout only |
+
+**Conventions:**
+- Localizer/glideslope follow CDI convention: positive deviation moves the diamond to where the course is (opposite the aircraft offset). Past ±2 dots the diamond pegs amber.
+- FMA columns turn amber on `LAND 2` / `NO AUTOLAND`, green on `LAND 3` / `FLARE`. Any value change draws a white outline for 10 s — the CAT IIIb autoland watch cue.
+- Radio altimeter blanks above 2500 ft AGL and turns amber when RA ≤ DA, with a "MINIMUMS" annunciator.
+- Speed tape shows Mach below the IAS box only at M ≥ 0.40.
+
+**Math helpers** (in `radarscope` core, useful for converting physical state into widget props):
+
+```ts
+import {
+  clampDots, dotsToOffset,
+  inHgToHpa, hpaToInHg,
+  vsiNeedleDeg,
+  LOC_DEG_PER_DOT, GS_DEG_PER_DOT, RA_VISIBLE_BELOW_FT,
+} from 'radarscope';
+```
+
 ## Theming
 
 The lib reads CSS custom properties with sensible dark-mode defaults. Override any of:
@@ -189,10 +250,22 @@ The lib reads CSS custom properties with sensible dark-mode defaults. Override a
   --scope-final: #6b7480;
   --scope-waypoint: #6096ba;
   --scope-route: #6096ba;
+
+  /* Instruments (PFD widgets) */
+  --pfd-bg: #0a0c10;
+  --pfd-fg: #ffffff;
+  --pfd-sky: #2b6cb0;
+  --pfd-ground: #6b4423;
+  --pfd-magenta: #d946ef;   /* selected speed/alt, FD V-bars, CDI diamonds */
+  --pfd-amber: #ffb000;     /* aircraft reference, heading box, MINIMUMS, alt alert */
+  --pfd-vref: #16a34a;      /* VREF reference, trend vectors, LAND 3 */
+  --pfd-cyan: #22d3ee;      /* DA / MDA tick on altitude tape */
+  --pfd-fma: #1a1d23;       /* FMA strip background */
+  --pfd-bezel: #2a2f38;     /* PFD outer border */
 }
 ```
 
-For a light theme, override `--scope-bg` and the contrast colors; everything else flows.
+For a light theme, override `--scope-bg` / `--pfd-bg` and the contrast colors; everything else flows.
 
 ## Demo
 
@@ -201,7 +274,9 @@ npm install
 npm run dev
 ```
 
-Opens an interactive sandbox: aircraft count slider, range rings, wind controls, click-to-select, conflict highlighting from the geometry helpers.
+Opens a tabbed sandbox:
+- **Radar scope** — aircraft count slider, range rings, wind controls, click-to-select, conflict highlighting from the geometry helpers.
+- **Instruments** — every PFD widget with sliders for each prop, plus the composite `<PFD>` driven from the same state.
 
 ## Tests
 

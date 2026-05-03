@@ -1,0 +1,285 @@
+<script lang="ts">
+  // Standalone demo for `radarscope/instruments`. Mirrors the games-app
+  // PFD lab but lives inside the radarscope repo so library users can
+  // try every widget without installing anything else.
+  import AttitudeIndicator from '../src/svelte/instruments/AttitudeIndicator.svelte';
+  import SpeedTape from '../src/svelte/instruments/SpeedTape.svelte';
+  import AltitudeTape from '../src/svelte/instruments/AltitudeTape.svelte';
+  import VSI from '../src/svelte/instruments/VSI.svelte';
+  import HeadingTape from '../src/svelte/instruments/HeadingTape.svelte';
+  import LocalizerScale from '../src/svelte/instruments/LocalizerScale.svelte';
+  import GlideslopeScale from '../src/svelte/instruments/GlideslopeScale.svelte';
+  import FMAStrip from '../src/svelte/instruments/FMAStrip.svelte';
+  import RadioAltimeter from '../src/svelte/instruments/RadioAltimeter.svelte';
+  import PFD from '../src/svelte/instruments/PFD.svelte';
+
+  let pitch = $state(-2);
+  let roll = $state(0);
+  let slip = $state(0.0);
+  let fdEnabled = $state(true);
+  let fdPitch = $state(-2.5);
+  let fdRoll = $state(0);
+
+  let ias = $state(140);
+  let vref = $state(135);
+  let selectedSpeed = $state<number | null>(140);
+  let mach = $state<number | null>(0.32);
+  let accelKt = $state<number | null>(0);
+  let vmo = $state<number | null>(250);
+  let vstall = $state<number | null>(105);
+  let vmin = $state<number | null>(120);
+  let vfe = $state<number | null>(180);
+  let gs = $state<number | null>(138);
+
+  let alt = $state(1200);
+  let selectedAlt = $state<number | null>(800);
+  let daBaro = $state<number | null>(800);
+  let baro = $state(29.92);
+  let baroUnit = $state<'inHg' | 'hPa'>('inHg');
+
+  let fpm = $state(-700);
+  let selectedFpm = $state<number | null>(-700);
+
+  let hdg = $state(265);
+  let hdgBug = $state<number | null>(265);
+  let track = $state<number | null>(267);
+  let course = $state<number | null>(263);
+
+  let locDots = $state(0.3);
+  let gsDots = $state(-0.4);
+
+  let fmaAt = $state('SPEED');
+  let fmaLat = $state('LOC');
+  let fmaVert = $state('G/S');
+  let fmaApp = $state('LAND 3');
+
+  let ra = $state(420);
+  let da = $state(200);
+
+  const fma = $derived({ at: fmaAt, lat: fmaLat, vert: fmaVert, app: fmaApp });
+  const fd = $derived(fdEnabled ? { pitch: fdPitch, roll: fdRoll } : null);
+</script>
+
+<header>
+  <h1>radarscope/instruments</h1>
+  <p>IFR cockpit widgets — each is a standalone SVG, themable via CSS variables.</p>
+</header>
+
+<div class="lab">
+  <section>
+    <h2>Composite PFD</h2>
+    <PFD
+      pitch={pitch}
+      roll={roll}
+      fd={fd}
+      slip={slip}
+      ias={ias}
+      vref={vref}
+      selectedSpeed={selectedSpeed}
+      mach={mach}
+      accelKt={accelKt}
+      vmo={vmo}
+      vstall={vstall}
+      vmin={vmin}
+      vfe={vfe}
+      gs={gs}
+      alt={alt}
+      selectedAlt={selectedAlt}
+      baro={baro}
+      baroUnit={baroUnit}
+      daBaro={daBaro}
+      fpm={fpm}
+      selectedFpm={selectedFpm}
+      hdg={hdg}
+      hdgBug={hdgBug}
+      track={track}
+      course={course}
+      locDots={locDots}
+      gsDots={gsDots}
+      fma={fma}
+      ra={ra}
+      da={da}
+    />
+  </section>
+
+  <section>
+    <h2>Attitude Indicator</h2>
+    <div class="row">
+      <AttitudeIndicator pitch={pitch} roll={roll} fd={fd} slip={slip} width={240} height={240} />
+      <div class="ctrl">
+        <label>pitch <input type="range" min="-30" max="30" step="0.5" bind:value={pitch} /> {pitch.toFixed(1)}°</label>
+        <label>roll <input type="range" min="-60" max="60" step="1" bind:value={roll} /> {roll}°</label>
+        <label>slip (g) <input type="range" min="-1" max="1" step="0.05" bind:value={slip} /> {slip.toFixed(2)}</label>
+        <label><input type="checkbox" bind:checked={fdEnabled} /> Flight director</label>
+        <label>FD pitch <input type="range" min="-15" max="15" step="0.5" bind:value={fdPitch} disabled={!fdEnabled} /> {fdPitch.toFixed(1)}°</label>
+        <label>FD roll <input type="range" min="-30" max="30" step="1" bind:value={fdRoll} disabled={!fdEnabled} /> {fdRoll}°</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Speed Tape</h2>
+    <div class="row">
+      <SpeedTape ias={ias} vref={vref} selected={selectedSpeed} mach={mach} accelKt={accelKt} vmo={vmo} vstall={vstall} vmin={vmin} vfe={vfe} gs={gs} width={70} height={272} />
+      <div class="ctrl">
+        <label>IAS <input type="range" min="80" max="350" step="1" bind:value={ias} /> {ias} kt</label>
+        <label>VREF <input type="range" min="100" max="180" step="1" bind:value={vref} /> {vref} kt</label>
+        <label>Selected <input type="range" min="80" max="350" step="1" bind:value={selectedSpeed} /> {selectedSpeed} kt</label>
+        <label>Mach <input type="range" min="0" max="0.95" step="0.01" bind:value={mach} /> {mach?.toFixed(2)}</label>
+        <label>Accel kt/s <input type="range" min="-3" max="3" step="0.1" bind:value={accelKt} /> {accelKt?.toFixed(1)}</label>
+        <label>VMO <input type="range" min="100" max="350" step="1" bind:value={vmo} /> {vmo}</label>
+        <label>Vstall <input type="range" min="60" max="200" step="1" bind:value={vstall} /> {vstall}</label>
+        <label>Vmin <input type="range" min="60" max="220" step="1" bind:value={vmin} /> {vmin}</label>
+        <label>VFE <input type="range" min="100" max="280" step="1" bind:value={vfe} /> {vfe}</label>
+        <label>GS <input type="range" min="0" max="500" step="1" bind:value={gs} /> {gs}</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Altitude Tape</h2>
+    <div class="row">
+      <AltitudeTape alt={alt} selectedAlt={selectedAlt} baro={baro} baroUnit={baroUnit} fpm={fpm} da={daBaro} width={80} height={272} />
+      <div class="ctrl">
+        <label>Alt <input type="range" min="0" max="40000" step="20" bind:value={alt} /> {alt} ft</label>
+        <label>Selected <input type="range" min="0" max="40000" step="100" bind:value={selectedAlt} /> {selectedAlt} ft</label>
+        <label>DA (baro) <input type="range" min="0" max="3000" step="20" bind:value={daBaro} /> {daBaro} ft</label>
+        <label>Baro <input type="number" step="0.01" bind:value={baro} /></label>
+        <label>Unit
+          <select bind:value={baroUnit}>
+            <option value="inHg">inHg</option>
+            <option value="hPa">hPa</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>VSI</h2>
+    <div class="row">
+      <VSI fpm={fpm} selectedFpm={selectedFpm} width={36} height={240} />
+      <div class="ctrl">
+        <label>fpm <input type="range" min="-2500" max="2500" step="50" bind:value={fpm} /> {fpm} fpm</label>
+        <label>Selected V/S <input type="range" min="-2500" max="2500" step="50" bind:value={selectedFpm} /> {selectedFpm} fpm</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Heading Tape</h2>
+    <div class="row col">
+      <HeadingTape hdg={hdg} bug={hdgBug} track={track} course={course} width={280} height={44} />
+      <div class="ctrl">
+        <label>HDG <input type="range" min="0" max="359" step="1" bind:value={hdg} /> {hdg}°</label>
+        <label>Bug <input type="range" min="0" max="359" step="1" bind:value={hdgBug} /> {hdgBug}°</label>
+        <label>Track <input type="range" min="0" max="359" step="1" bind:value={track} /> {track}°</label>
+        <label>Course <input type="range" min="0" max="359" step="1" bind:value={course} /> {course}°</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Localizer / Glideslope</h2>
+    <div class="row">
+      <div>
+        <LocalizerScale deviation={locDots} width={200} height={24} />
+        <label class="solo">LOC dots <input type="range" min="-3" max="3" step="0.05" bind:value={locDots} /> {locDots.toFixed(2)}</label>
+      </div>
+      <div>
+        <GlideslopeScale deviation={gsDots} width={24} height={200} />
+        <label class="solo">G/S dots <input type="range" min="-3" max="3" step="0.05" bind:value={gsDots} /> {gsDots.toFixed(2)}</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>FMA Strip</h2>
+    <p class="hint">Change a column to see the white "mode change" outline (~10 s).</p>
+    <div class="row col">
+      <FMAStrip at={fmaAt} lat={fmaLat} vert={fmaVert} app={fmaApp} width={400} height={28} />
+      <div class="ctrl ctrl-grid">
+        <label>AT
+          <select bind:value={fmaAt}>
+            {#each ['SPEED','THR REF','RETARD','IDLE','HOLD',''] as o}<option value={o}>{o || '(blank)'}</option>{/each}
+          </select>
+        </label>
+        <label>LAT
+          <select bind:value={fmaLat}>
+            {#each ['LOC','HDG SEL','LNAV','ROLLOUT',''] as o}<option value={o}>{o || '(blank)'}</option>{/each}
+          </select>
+        </label>
+        <label>VERT
+          <select bind:value={fmaVert}>
+            {#each ['G/S','V/S','ALT','VNAV','FLARE',''] as o}<option value={o}>{o || '(blank)'}</option>{/each}
+          </select>
+        </label>
+        <label>APP
+          <select bind:value={fmaApp}>
+            {#each ['LAND 3','LAND 2','NO AUTOLAND','ILS',''] as o}<option value={o}>{o || '(blank)'}</option>{/each}
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Radio Altimeter</h2>
+    <div class="row">
+      <RadioAltimeter ra={ra} da={da} width={120} height={44} />
+      <div class="ctrl">
+        <label>RA <input type="range" min="0" max="3000" step="5" bind:value={ra} /> {ra} ft</label>
+        <label>DA <input type="range" min="0" max="800" step="10" bind:value={da} /> {da} ft</label>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  :global(:root) {
+    --pfd-bg: #0a0c10;
+    --pfd-fg: #ffffff;
+    --pfd-sky: #2b6cb0;
+    --pfd-ground: #6b4423;
+    --pfd-magenta: #d946ef;
+    --pfd-amber: #ffb000;
+    --pfd-vref: #16a34a;
+    --pfd-fma: #1a1d23;
+    --pfd-bezel: #2a2f38;
+    --pfd-cyan: #22d3ee;
+  }
+  header { padding: 1rem 0; }
+  header h1 { margin: 0; font-size: 1.2rem; }
+  header p { color: #94a3b8; margin: 0.25rem 0 0; font-size: 0.85rem; }
+  .lab { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem; }
+  section {
+    background: #15191f;
+    border: 1px solid #2a2f38;
+    border-radius: 8px;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  section h2 { margin: 0; font-size: 0.95rem; }
+  .hint { margin: 0; color: #94a3b8; font-size: 0.75rem; }
+  .row { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+  .row.col { flex-direction: column; align-items: stretch; }
+  .ctrl {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 220px;
+  }
+  .ctrl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+  .ctrl label, .solo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+  }
+  .solo { margin-top: 0.5rem; }
+  input[type="range"] { flex: 1; min-width: 100px; }
+  input[type="number"] { width: 80px; }
+</style>

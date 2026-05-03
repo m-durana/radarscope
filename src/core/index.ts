@@ -22,3 +22,15 @@ export {
 export type { BlipOptions, ScopeOptions, SvgNode } from './scene.js';
 
 export { renderToString } from './render.js';
+
+export {
+  LOC_DEG_PER_DOT,
+  GS_DEG_PER_DOT,
+  RA_VISIBLE_BELOW_FT,
+  PITCH_LADDER_STEP_DEG,
+  clampDots,
+  dotsToOffset,
+  inHgToHpa,
+  hpaToInHg,
+  vsiNeedleDeg,
+} from './instruments.js';

@@ -203,12 +203,13 @@ export function buildRunway(rw: Runway): SvgNode {
   const fwd = headingToVector(rw.heading, len);
   const showFinal = rw.showFinal ?? false;
 
-  // Real ATC scopes (STARS, openScope) draw every runway with the same uniform
-  // thin grey stroke — hierarchy comes from the dashed centerline on the
-  // ACTIVE runway, not from making it thicker. This stops parallel-runway
-  // airports (KORD, KATL, KDFW) from rendering as a chunky stack of bars.
-  const stroke = 'var(--scope-runway, #97a4ab)';
-  const strokeWidth = 0.06;
+  // Runways stay uniform thin — hierarchy comes from the dashed centerline on
+  // the ACTIVE runway, not from per-runway thickness. This keeps parallel-
+  // runway airports (KORD, KATL, KDFW) from rendering as a chunky stack of
+  // bars. The default stroke (was 0.06) is bumped to 0.14 because at terminal
+  // ranges (15-30 nm) a 0.6-nm strip at the original width was barely visible.
+  const stroke = 'var(--scope-runway, #c8d3db)';
+  const strokeWidth = 0.14;
 
   const children: SvgNode[] = [];
   if (showFinal) {
