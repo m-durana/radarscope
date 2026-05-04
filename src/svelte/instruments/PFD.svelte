@@ -11,7 +11,9 @@
   import LocalizerScale from './LocalizerScale.svelte';
   import GlideslopeScale from './GlideslopeScale.svelte';
   import FMAStrip from './FMAStrip.svelte';
+  import APAnnunciator from './APAnnunciator.svelte';
   import RadioAltimeter from './RadioAltimeter.svelte';
+  import WindReadout from './WindReadout.svelte';
   import type { FlightDirector, FmaState, SpeedBug } from './types.js';
 
   interface Props {
@@ -55,9 +57,26 @@
     course?: number | null;
     locDots: number;
     gsDots: number;
+    /** When false, the LOC scale shows a red failure flag. */
+    locValid?: boolean;
+    /** When false, the G/S scale shows a red failure flag. */
+    gsValid?: boolean;
     fma: FmaState;
+    /** Autopilot engagement state shown between FMA and AI.
+     *  'CMD' = autopilot engaged, 'FD' = flight director only, null = off. */
+    apEngaged?: 'CMD' | 'FD' | null;
+    /** Optional sub-label below AP state (e.g. "LNAV/VNAV"). */
+    apSubtext?: string | null;
     ra?: number | null;
     da?: number | null;
+    /** TCAS RA red band on the VSI. */
+    tcasRedBand?: { lo: number; hi: number } | null;
+    /** TCAS RA green band on the VSI. */
+    tcasGreenBand?: { lo: number; hi: number } | null;
+    /** Wind FROM direction in degrees true. */
+    windFrom?: number | null;
+    /** Wind speed in knots. */
+    windKt?: number | null;
   }
 
   let {
@@ -90,9 +109,17 @@
     course = null,
     locDots,
     gsDots,
+    locValid = true,
+    gsValid = true,
     fma,
+    apEngaged = null,
+    apSubtext = null,
     ra = null,
     da = null,
+    tcasRedBand = null,
+    tcasGreenBand = null,
+    windFrom = null,
+    windKt = null,
   }: Props = $props();
 </script>
 
@@ -101,45 +128,57 @@
     <FMAStrip at={fma.at} lat={fma.lat} vert={fma.vert} app={fma.app} width={400} height={28} />
   </div>
 
+  <div class="row ap-row">
+    <APAnnunciator engaged={apEngaged} subtext={apSubtext} width={240} height={22} />
+  </div>
+
   <div class="row main-row">
     <div class="cell speed">
       <SpeedTape
         ias={ias} vref={vref} bugs={bugs} selected={selectedSpeed}
         mach={mach} accelKt={accelKt}
         vmo={vmo} vstall={vstall} vmin={vmin} vfe={vfe} gs={gs}
-        width={70} height={272}
+        width={70} height={290}
       />
     </div>
 
     <div class="cell ai-stack">
       <AttitudeIndicator pitch={pitch} roll={roll} fd={fd} slip={slip} width={240} height={240} />
       <div class="ra-pos">
-        <RadioAltimeter ra={ra} da={da} width={100} height={28} />
+        <RadioAltimeter ra={ra} da={da} width={100} height={32} />
       </div>
       <div class="loc-pos">
-        <LocalizerScale deviation={locDots} width={200} height={20} />
+        <LocalizerScale deviation={locDots} valid={locValid} width={200} height={20} />
       </div>
-    </div>
-
-    <div class="cell gs-col">
-      <GlideslopeScale deviation={gsDots} width={20} height={200} />
+      <div class="gs-pos">
+        <GlideslopeScale deviation={gsDots} valid={gsValid} width={20} height={200} />
+      </div>
     </div>
 
     <div class="cell alt">
       <AltitudeTape
         alt={alt} selectedAlt={selectedAlt} baro={baro} baroUnit={baroUnit}
         fpm={fpm} da={daBaro} daSource={daSource}
-        width={80} height={272}
+        width={80} height={290}
       />
     </div>
 
     <div class="cell vsi">
-      <VSI fpm={fpm} selectedFpm={selectedFpm} width={36} height={272} />
+      <VSI
+        fpm={fpm} selectedFpm={selectedFpm}
+        tcasRedBand={tcasRedBand} tcasGreenBand={tcasGreenBand}
+        width={36} height={290}
+      />
     </div>
   </div>
 
   <div class="row hdg-row">
     <HeadingTape hdg={hdg} bug={hdgBug} track={track} course={course} width={280} height={44} />
+    {#if windFrom !== null && windKt !== null}
+      <div class="wind-pos">
+        <WindReadout from={windFrom} kt={windKt} width={80} height={28} />
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -158,7 +197,9 @@
     border-radius: 8px;
   }
   .row { display: flex; align-items: center; }
-  .fma-row, .hdg-row { justify-content: center; }
+  .fma-row, .hdg-row, .ap-row { justify-content: center; }
+  .hdg-row { gap: 8px; align-items: center; }
+  .wind-pos { display: inline-block; }
   .main-row { gap: 4px; align-items: flex-start; }
   .ai-stack {
     position: relative;
@@ -177,5 +218,23 @@
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
+  }
+  /* G/S scale floats just outside the AI ball, right side. Matches the
+   * Boeing PFD layout — kept inside the AI cell so it doesn't bias the
+   * row width and push the AI off-center. */
+  .gs-pos {
+    position: absolute;
+    top: 20px;
+    right: -22px;
+    pointer-events: none;
+  }
+  /* Pad the speed cell so its outer width matches alt(80) + vsi(36) on
+   * the right. Without this, the AI sits left of center because the
+   * right side is wider. The SpeedTape itself stays right-aligned
+   * against the AI. */
+  .cell.speed {
+    width: 116px;
+    display: flex;
+    justify-content: flex-end;
   }
 </style>

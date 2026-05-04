@@ -24,6 +24,10 @@
       "svelte": "./src/svelte/instruments/index.ts",
       "import": "./dist/svelte/instruments/index.js"
     },
+    "./atc": {
+      "types": "./dist/core/atc/index.d.ts",
+      "import": "./dist/core/atc/index.js"
+    },
     "./data": {
       "types": "./dist/data/index.d.ts",
       "import": "./dist/data/index.js"

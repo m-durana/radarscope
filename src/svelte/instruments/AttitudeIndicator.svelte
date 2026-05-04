@@ -85,14 +85,16 @@
   <!-- Horizon: rotated by roll, translated by pitch. -->
   <g clip-path="url(#ai-clip)">
     <g transform="rotate({-roll}) translate(0 {horizonY})">
-      <!-- Sky -->
-      <rect x="-300" y="-300" width="600" height="300" fill="var(--pfd-sky, #2b6cb0)" />
-      <!-- Ground -->
-      <rect x="-300" y="0" width="600" height="300" fill="var(--pfd-ground, #6b4423)" />
+      <!-- Sky / ground. Defaults are saturated Boeing-style (vivid blue
+           and warm brown). Override via --pfd-sky / --pfd-ground. -->
+      <rect x="-300" y="-300" width="600" height="300" fill="var(--pfd-sky, #1d6fb8)" />
+      <rect x="-300" y="0" width="600" height="300" fill="var(--pfd-ground, #8b4a1e)" />
       <!-- Horizon line -->
       <line x1="-300" y1="0" x2="300" y2="0" stroke="var(--pfd-fg, #ffffff)" stroke-width="1.2" />
 
-      <!-- Pitch ladder -->
+      <!-- Pitch ladder. Major marks (±10°, ±20°, ±30°) get inward-
+           pointing tabs at the line ends — the Boeing convention that
+           always cues which way the horizon sits relative to the mark. -->
       {#each ladder as l}
         <line
           x1={-l.halfWidth}
@@ -103,6 +105,9 @@
           stroke-width="1"
         />
         {#if l.label}
+          {@const tabDir = l.deg > 0 ? 3.5 : -3.5}
+          <line x1={-l.halfWidth} y1={l.y} x2={-l.halfWidth} y2={l.y + tabDir} stroke="var(--pfd-fg, #ffffff)" stroke-width="1" />
+          <line x1={l.halfWidth} y1={l.y} x2={l.halfWidth} y2={l.y + tabDir} stroke="var(--pfd-fg, #ffffff)" stroke-width="1" />
           <text
             x={-l.halfWidth - 4}
             y={l.y + 2}
@@ -160,7 +165,7 @@
   {#if fd}
     {@const fdY = (pitch - fd.pitch) * PX_PER_DEG}
     {@const fdRoll = -roll + fd.roll}
-    <g transform="rotate({fdRoll}) translate(0 {fdY})">
+    <g class="shadowed" transform="rotate({fdRoll}) translate(0 {fdY})">
       <polyline
         points="-30,0 0,8 30,0"
         fill="none"
@@ -172,7 +177,7 @@
   {/if}
 
   <!-- Aircraft reference symbol (fixed, doesn't roll). -->
-  <g class="aircraft-ref">
+  <g class="aircraft-ref shadowed">
     <line x1="-40" y1="0" x2="-12" y2="0" stroke="var(--pfd-amber, #ffb000)" stroke-width="2.5" />
     <line x1="12" y1="0" x2="40" y2="0" stroke="var(--pfd-amber, #ffb000)" stroke-width="2.5" />
     <line x1="-12" y1="0" x2="-12" y2="6" stroke="var(--pfd-amber, #ffb000)" stroke-width="2.5" />
@@ -186,5 +191,11 @@
     display: block;
     background: var(--pfd-bg, #0a0c10);
     border-radius: 6px;
+  }
+  /* Legibility halo around the FD bars and the fixed aircraft symbol so
+   * they read clearly against either the sky or ground fill. Technique
+   * referenced from licarth/a320pfd (see ATTRIBUTIONS.md). */
+  .shadowed {
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.85));
   }
 </style>

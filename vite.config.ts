@@ -10,6 +10,7 @@ export default defineConfig({
         'core/index': resolve(__dirname, 'src/core/index.ts'),
         'svelte/index': resolve(__dirname, 'src/svelte/index.ts'),
         'svelte/instruments/index': resolve(__dirname, 'src/svelte/instruments/index.ts'),
+        'core/atc/index': resolve(__dirname, 'src/core/atc/index.ts'),
         'data/index': resolve(__dirname, 'src/data/index.ts'),
       },
       formats: ['es'],

@@ -10,7 +10,9 @@
   import LocalizerScale from '../src/svelte/instruments/LocalizerScale.svelte';
   import GlideslopeScale from '../src/svelte/instruments/GlideslopeScale.svelte';
   import FMAStrip from '../src/svelte/instruments/FMAStrip.svelte';
+  import APAnnunciator from '../src/svelte/instruments/APAnnunciator.svelte';
   import RadioAltimeter from '../src/svelte/instruments/RadioAltimeter.svelte';
+  import WindReadout from '../src/svelte/instruments/WindReadout.svelte';
   import PFD from '../src/svelte/instruments/PFD.svelte';
 
   let pitch = $state(-2);
@@ -47,11 +49,23 @@
 
   let locDots = $state(0.3);
   let gsDots = $state(-0.4);
+  let locValid = $state(true);
+  let gsValid = $state(true);
+  let tcasRedLo = $state(-1500);
+  let tcasRedHi = $state(-500);
+  let tcasGreenEnabled = $state(false);
+  let tcasGreenLo = $state(500);
+  let tcasGreenHi = $state(1500);
+  let windFrom = $state<number | null>(250);
+  let windKt = $state<number | null>(18);
 
   let fmaAt = $state('SPEED');
   let fmaLat = $state('LOC');
   let fmaVert = $state('G/S');
   let fmaApp = $state('LAND 3');
+
+  let apEngaged = $state<'CMD' | 'FD' | null>('CMD');
+  let apSubtext = $state('LNAV/VNAV');
 
   let ra = $state(420);
   let da = $state(200);
@@ -96,9 +110,17 @@
       course={course}
       locDots={locDots}
       gsDots={gsDots}
+      locValid={locValid}
+      gsValid={gsValid}
       fma={fma}
+      apEngaged={apEngaged}
+      apSubtext={apSubtext}
       ra={ra}
       da={da}
+      tcasRedBand={{ lo: tcasRedLo, hi: tcasRedHi }}
+      tcasGreenBand={tcasGreenEnabled ? { lo: tcasGreenLo, hi: tcasGreenHi } : null}
+      windFrom={windFrom}
+      windKt={windKt}
     />
   </section>
 
@@ -158,10 +180,20 @@
   <section>
     <h2>VSI</h2>
     <div class="row">
-      <VSI fpm={fpm} selectedFpm={selectedFpm} width={36} height={240} />
+      <VSI
+        fpm={fpm} selectedFpm={selectedFpm}
+        tcasRedBand={{ lo: tcasRedLo, hi: tcasRedHi }}
+        tcasGreenBand={tcasGreenEnabled ? { lo: tcasGreenLo, hi: tcasGreenHi } : null}
+        width={36} height={240}
+      />
       <div class="ctrl">
         <label>fpm <input type="range" min="-2500" max="2500" step="50" bind:value={fpm} /> {fpm} fpm</label>
         <label>Selected V/S <input type="range" min="-2500" max="2500" step="50" bind:value={selectedFpm} /> {selectedFpm} fpm</label>
+        <label>TCAS red lo <input type="range" min="-2500" max="2500" step="50" bind:value={tcasRedLo} /> {tcasRedLo}</label>
+        <label>TCAS red hi <input type="range" min="-2500" max="2500" step="50" bind:value={tcasRedHi} /> {tcasRedHi}</label>
+        <label><input type="checkbox" bind:checked={tcasGreenEnabled} /> TCAS green band (corrective RA)</label>
+        <label>green lo <input type="range" min="-2500" max="2500" step="50" bind:value={tcasGreenLo} disabled={!tcasGreenEnabled} /> {tcasGreenLo}</label>
+        <label>green hi <input type="range" min="-2500" max="2500" step="50" bind:value={tcasGreenHi} disabled={!tcasGreenEnabled} /> {tcasGreenHi}</label>
       </div>
     </div>
   </section>
@@ -183,12 +215,14 @@
     <h2>Localizer / Glideslope</h2>
     <div class="row">
       <div>
-        <LocalizerScale deviation={locDots} width={200} height={24} />
+        <LocalizerScale deviation={locDots} valid={locValid} width={200} height={24} />
         <label class="solo">LOC dots <input type="range" min="-3" max="3" step="0.05" bind:value={locDots} /> {locDots.toFixed(2)}</label>
+        <label class="solo"><input type="checkbox" bind:checked={locValid} /> LOC signal valid</label>
       </div>
       <div>
-        <GlideslopeScale deviation={gsDots} width={24} height={200} />
+        <GlideslopeScale deviation={gsDots} valid={gsValid} width={24} height={200} />
         <label class="solo">G/S dots <input type="range" min="-3" max="3" step="0.05" bind:value={gsDots} /> {gsDots.toFixed(2)}</label>
+        <label class="solo"><input type="checkbox" bind:checked={gsValid} /> G/S signal valid</label>
       </div>
     </div>
   </section>
@@ -219,6 +253,35 @@
             {#each ['LAND 3','LAND 2','NO AUTOLAND','ILS',''] as o}<option value={o}>{o || '(blank)'}</option>{/each}
           </select>
         </label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>AP Annunciator</h2>
+    <p class="hint">Sits between FMA and the AI ball — shows whether the autopilot is engaged (CMD), in flight-director-only mode (FD), or off.</p>
+    <div class="row col">
+      <APAnnunciator engaged={apEngaged} subtext={apSubtext} width={240} height={22} />
+      <div class="ctrl ctrl-grid">
+        <label>State
+          <select bind:value={apEngaged}>
+            <option value={null}>(off)</option>
+            <option value={'CMD'}>CMD</option>
+            <option value={'FD'}>FD</option>
+          </select>
+        </label>
+        <label>Subtext <input type="text" bind:value={apSubtext} /></label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Wind</h2>
+    <div class="row">
+      <WindReadout from={windFrom} kt={windKt} width={80} height={28} />
+      <div class="ctrl">
+        <label>From <input type="range" min="0" max="359" step="1" bind:value={windFrom} /> {windFrom}°</label>
+        <label>Speed <input type="range" min="0" max="80" step="1" bind:value={windKt} /> {windKt} kt</label>
       </div>
     </div>
   </section>

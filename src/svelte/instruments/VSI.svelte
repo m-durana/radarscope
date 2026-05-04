@@ -5,11 +5,24 @@
     /** Selected vertical speed reference (used in V/S autopilot mode).
      *  Drawn as a magenta caret on the scale. Pass null/undefined to hide. */
     selectedFpm?: number | null;
+    /** TCAS resolution-advisory red band [lo, hi] in fpm — the "do not
+     *  fly here" zone. Pass null to hide. */
+    tcasRedBand?: { lo: number; hi: number } | null;
+    /** TCAS resolution-advisory green band [lo, hi] in fpm — the "fly
+     *  here" zone (corrective RAs). Pass null to hide. */
+    tcasGreenBand?: { lo: number; hi: number } | null;
     width?: number;
     height?: number;
   }
 
-  let { fpm, selectedFpm = null, width = 36, height = 240 }: Props = $props();
+  let {
+    fpm,
+    selectedFpm = null,
+    tcasRedBand = null,
+    tcasGreenBand = null,
+    width = 36,
+    height = 240,
+  }: Props = $props();
 
   // Vertical scale, ±2000 fpm full range. Compressed past ±1000.
   // We map to a y-pixel position (0 = level, negative = climb above center).
@@ -39,6 +52,20 @@
   aria-label="Vertical speed, {readout} feet per minute"
 >
   <rect x="-18" y="-120" width="36" height="240" fill="var(--pfd-bg, #0a0c10)" />
+
+  <!-- TCAS resolution-advisory bands (rendered behind the scale).
+       Red = avoid; green = fly here. fpmToY clamps via the inner/outer
+       compression, so band edges line up with needle position. -->
+  {#if tcasRedBand}
+    {@const yA = fpmToY(tcasRedBand.lo)}
+    {@const yB = fpmToY(tcasRedBand.hi)}
+    <rect x="-14" y={Math.min(yA, yB)} width="4" height={Math.abs(yA - yB)} fill="#dc2626" />
+  {/if}
+  {#if tcasGreenBand}
+    {@const yA = fpmToY(tcasGreenBand.lo)}
+    {@const yB = fpmToY(tcasGreenBand.hi)}
+    <rect x="-14" y={Math.min(yA, yB)} width="4" height={Math.abs(yA - yB)} fill="#16a34a" />
+  {/if}
 
   <!-- Center reference (level flight) -->
   <line x1="-12" y1="0" x2="12" y2="0" stroke="var(--pfd-fg, #ffffff)" stroke-width="0.8" opacity="0.5" />

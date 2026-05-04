@@ -2,6 +2,10 @@
 
 Aviation-themed SVG primitives for top-down radar / ATC views: scopes, aircraft blips, runways, waypoints, wind tags, plus the geometry math you'd otherwise re-derive every project.
 
+> **Purpose.** This library exists primarily to back the flight-deck and ATC games at <https://miro.build/games/flight-deck>. It's published as a standalone package because the underlying primitives are general-purpose and someone else might find them useful, but the roadmap is driven by what those games need. If you're considering using it elsewhere, that's welcome — just know the priorities.
+>
+> Where third-party code, schemas, or visual techniques have been borrowed, they are credited in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md) with the corresponding licenses preserved under [`licenses/`](./licenses/).
+
 - **Framework-agnostic core** — zero dependencies, just TypeScript. Geometry helpers (`headingToVector`, `findConflicts`, `interceptAngle`, …), instrument math (`clampDots`, `vsiNeedleDeg`, `inHgToHpa`, …), and a scene-graph that renders to a static SVG string.
 - **Svelte 5 adapter** — ergonomic reactive components (`<RadarScope>`, `<AircraftBlip>`, `<RunwayMarker>`, `<Waypoint>`, `<Route>`, `<WindTag>`) that consume the same geometry. Subpath export, opt-in.
 - **IFR cockpit instruments** — composable PFD widgets (`<AttitudeIndicator>`, `<SpeedTape>`, `<AltitudeTape>`, `<VSI>`, `<HeadingTape>`, `<LocalizerScale>`, `<GlideslopeScale>`, `<FMAStrip>`, `<RadioAltimeter>`, plus a layout-only `<PFD>`). Each widget is a self-contained SVG with its own `viewBox` — drop one in anywhere, theme via CSS variables. Subpath export, opt-in.

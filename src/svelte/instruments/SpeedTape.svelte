@@ -49,7 +49,7 @@
     vfe = null,
     gs = null,
     width = 70,
-    height = 272,
+    height = 290,
   }: Props = $props();
 
   const showMach = $derived(mach !== null && mach >= 0.4);
@@ -77,13 +77,24 @@
   function bugY(kt: number): number {
     return (ias - kt) * PX_PER_KT;
   }
+
+  // Rolling-digit drum for the IAS box. Tens-and-up digits are static;
+  // the ones digit is on a smooth-scrolling drum that picks up the
+  // fractional part of `ias`. As IAS climbs, the digit visually slides
+  // upward and the next digit comes into view from below.
+  const iasFloor = $derived(Math.floor(ias));
+  const iasFrac = $derived(ias - iasFloor);
+  const iasTens = $derived(Math.floor(iasFloor / 10));
+  const iasOnesNow = $derived(iasFloor % 10);
+  const iasOnesPrev = $derived((iasOnesNow + 9) % 10);
+  const iasOnesNext = $derived((iasOnesNow + 1) % 10);
 </script>
 
 <svg
   class="tape"
   {width}
   {height}
-  viewBox="-50 -136 70 272"
+  viewBox="-50 -136 70 290"
   xmlns="http://www.w3.org/2000/svg"
   aria-label="Airspeed tape, {Math.round(ias)} knots"
 >
@@ -100,8 +111,9 @@
     >{Math.round(selected)}</text>
   {/if}
 
-  <!-- Background strip -->
-  <rect x="-50" y="-120" width="60" height="240" fill="var(--pfd-bg, #0a0c10)" />
+  <!-- Background strip. Boeing-style neutral grey via --pfd-tape-bg
+       so the colored AI ball stays visually dominant. -->
+  <rect x="-50" y="-120" width="60" height="240" fill="var(--pfd-tape-bg, #1c2027)" />
 
   <!-- Clip the moving tape so labels don't overflow. -->
   <defs>
@@ -149,7 +161,7 @@
         stroke="var(--pfd-fg, #ffffff)"
         stroke-width="1"
       />
-      {#if t.major}
+      {#if t.major && Math.abs(t.y) < 110}
         <text
           x="-14"
           y={t.y + 3}
@@ -160,7 +172,8 @@
       {/if}
     {/each}
 
-    <!-- VREF reference line (green) -->
+    <!-- VREF reference line (green) with boxed "REF" callout — the
+         classic Boeing tag that sits next to the green line. -->
     {#if vref !== null && Math.abs(ias - vref) < VISIBLE_RANGE + 5}
       <line
         x1="-12"
@@ -170,13 +183,23 @@
         stroke="var(--pfd-vref, #16a34a)"
         stroke-width="2"
       />
+      <rect
+        x="-30"
+        y={bugY(vref) - 5}
+        width="16"
+        height="9"
+        fill="var(--pfd-tape-bg, #1c2027)"
+        stroke="var(--pfd-vref, #16a34a)"
+        stroke-width="0.8"
+      />
       <text
-        x="-14"
-        y={bugY(vref) - 2}
-        text-anchor="end"
-        font-size="7"
+        x="-22"
+        y={bugY(vref) + 2}
+        text-anchor="middle"
+        font-size="6.5"
+        font-weight="700"
         fill="var(--pfd-vref, #16a34a)"
-      >VREF</text>
+      >REF</text>
     {/if}
 
     <!-- Custom bugs -->
@@ -227,22 +250,41 @@
     {/if}
   </g>
 
-  <!-- Current-value readout box (always centered). Wider so 4-digit
-       speeds and the chevron tip stay inside. -->
+  <!-- Current-value readout box. Tens-and-up digits are static; the
+       ones digit lives in a small drum window that scrolls smoothly
+       with sub-knot changes — the characteristic glass-cockpit look. -->
   <rect x="-32" y="-11" width="42" height="22" fill="var(--pfd-bg, #0a0c10)" stroke="var(--pfd-fg, #ffffff)" stroke-width="1.2" />
+  <!-- Static tens-and-up portion. Right-anchored so the hundreds digit
+       is to the left of the drum, and the drum sits at x=6 (right edge). -->
   <text
-    x="6"
+    x="-3"
     y="5"
     text-anchor="end"
     font-size="13"
     font-weight="700"
     fill="var(--pfd-fg, #ffffff)"
-  >{Math.round(ias)}</text>
+  >{iasTens}</text>
+  <!-- Drum window for the ones digit. Clip so neighbours peek but don't
+       leak. The inner group translates upward as `iasFrac` increases —
+       the current digit slides off the top, the next digit arrives from
+       below. -->
+  <defs>
+    <clipPath id="ias-ones-clip">
+      <rect x="-3" y="-9" width="11" height="18" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#ias-ones-clip)">
+    <g transform="translate(0 {-iasFrac * 14})">
+      <text x="6" y="-9" text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{iasOnesPrev}</text>
+      <text x="6" y="5"  text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{iasOnesNow}</text>
+      <text x="6" y="19" text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{iasOnesNext}</text>
+    </g>
+  </g>
 
   {#if showMach}
     <text
-      x="-2"
-      y="128"
+      x="6"
+      y="132"
       text-anchor="end"
       font-size="10"
       fill="var(--pfd-fg, #ffffff)"
@@ -250,13 +292,14 @@
   {/if}
 
   {#if gs !== null}
-    {@const gsY = showMach ? 134 : 128}
-    <text x="-32" y={gsY} font-size="8" fill="var(--pfd-fg, #ffffff)">GS</text>
+    {@const gsY = showMach ? 148 : 132}
+    <text x="-40" y={gsY} font-size="8" fill="var(--pfd-fg, #ffffff)">GS</text>
     <text
-      x="-2"
+      x="6"
       y={gsY}
       text-anchor="end"
-      font-size="9"
+      font-size="10"
+      font-weight="700"
       fill="var(--pfd-fg, #ffffff)"
     >{Math.round(gs)}</text>
   {/if}

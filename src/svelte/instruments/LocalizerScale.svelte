@@ -5,11 +5,14 @@
     /** Localizer deviation in dots. Positive = aircraft right of course
      *  → diamond appears LEFT of center (showing where the course is). */
     deviation: number;
+    /** Signal validity. When false, the diamond hides and a red "LOC"
+     *  failure flag is shown (the standard "no nav data" annunciation). */
+    valid?: boolean;
     width?: number;
     height?: number;
   }
 
-  let { deviation, width = 200, height = 24 }: Props = $props();
+  let { deviation, valid = true, width = 200, height = 24 }: Props = $props();
 
   // ViewBox 200 wide. Scale spans 160 px → 40 px per dot at ±2 full-scale.
   const PX_PER_DOT = 40;
@@ -40,13 +43,19 @@
   <!-- Center reference (vertical tick) -->
   <line x1="0" y1="-9" x2="0" y2="9" stroke="var(--pfd-fg, #ffffff)" stroke-width="1.2" />
 
-  <!-- Diamond -->
-  <polygon
-    points="{dx},-9 {dx + 7},0 {dx},9 {dx - 7},0"
-    fill={pegged ? 'var(--pfd-amber, #ffb000)' : 'var(--pfd-magenta, #d946ef)'}
-    stroke="var(--pfd-fg, #ffffff)"
-    stroke-width="0.8"
-  />
+  <!-- Diamond (hidden when signal invalid) -->
+  {#if valid}
+    <polygon
+      points="{dx},-9 {dx + 7},0 {dx},9 {dx - 7},0"
+      fill={pegged ? 'var(--pfd-amber, #ffb000)' : 'var(--pfd-magenta, #d946ef)'}
+      stroke="var(--pfd-fg, #ffffff)"
+      stroke-width="0.8"
+    />
+  {:else}
+    <!-- Red failure flag where the diamond would be. -->
+    <rect x="-12" y="-7" width="24" height="14" fill="#dc2626" stroke="var(--pfd-fg, #ffffff)" stroke-width="0.6" />
+    <text x="0" y="3" text-anchor="middle" font-size="8" font-weight="700" fill="#ffffff">LOC</text>
+  {/if}
 
   <!-- LOC label, in the top-left corner so it doesn't overlap dots. -->
   <text

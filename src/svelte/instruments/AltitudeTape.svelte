@@ -31,7 +31,7 @@
     da = null,
     daSource = 'BARO',
     width = 80,
-    height = 272,
+    height = 290,
   }: Props = $props();
 
   // Altitude alert: amber outline around selected-alt readout when
@@ -72,13 +72,47 @@
   const baroText = $derived(
     baroUnit === 'inHg' ? baro.toFixed(2) : Math.round(baro).toString(),
   );
+
+  // Format thousands with a space separator — Boeing convention on the
+  // selected-altitude readout ("3 000" not "3000").
+  function fmtAlt(ft: number): string {
+    const r = Math.round(ft);
+    const s = Math.abs(r).toString();
+    if (s.length <= 3) return r.toString();
+    const head = s.slice(0, s.length - 3);
+    const tail = s.slice(-3);
+    return (r < 0 ? '-' : '') + head + ' ' + tail;
+  }
+
+  // Rolling-digit drum for the current altitude. The tens digit is on a
+  // smooth-scrolling drum (the "20" in "1 520" rolls past as you climb);
+  // hundreds-and-up are static. We round the displayed alt down to the
+  // nearest 20 ft so the drum advances in real-PFD-style 20 ft steps.
+  const altFloor = $derived(Math.floor(alt / 20) * 20);
+  const altFrac = $derived((alt - altFloor) / 20); // 0..1 within the next 20 ft
+  // Hundreds-and-up portion, displayed with thousands-space separator.
+  const altHundredsAndUp = $derived(Math.floor(altFloor / 100));
+  const altHundredsText = $derived.by(() => {
+    const s = altHundredsAndUp.toString();
+    // Group thousands: "15" stays "15", "152" → "1 52", "1234" → "12 34"
+    if (s.length <= 1) return s;
+    if (s.length <= 2) return s; // up to 9 900 ft, no separator yet
+    const head = s.slice(0, s.length - 2);
+    const tail = s.slice(-2);
+    return head + ' ' + tail;
+  });
+  // Tens-digit pair shown in the drum: "00", "20", "40", "60", "80" cycling.
+  const altTensNow = $derived(((altFloor / 20) % 5) * 20);
+  const altTensNext = $derived(((altTensNow + 20) % 100));
+  const altTensPrev = $derived(((altTensNow + 80) % 100));
+  const fmtTens = (n: number) => n.toString().padStart(2, '0');
 </script>
 
 <svg
   class="tape"
   {width}
   {height}
-  viewBox="0 -136 80 272"
+  viewBox="0 -136 80 290"
   xmlns="http://www.w3.org/2000/svg"
   aria-label="Altitude tape, {Math.round(alt)} feet"
 >
@@ -102,10 +136,10 @@
       font-size="11"
       font-weight="700"
       fill="var(--pfd-magenta, #d946ef)"
-    >{Math.round(selectedAlt)}</text>
+    >{fmtAlt(selectedAlt)}</text>
   {/if}
 
-  <rect x="0" y="-120" width="80" height="240" fill="var(--pfd-bg, #0a0c10)" />
+  <rect x="0" y="-122" width="80" height="270" fill="var(--pfd-tape-bg, #1c2027)" />
 
   <defs>
     <clipPath id="alt-clip">
@@ -123,7 +157,7 @@
         stroke="var(--pfd-fg, #ffffff)"
         stroke-width="1"
       />
-      {#if t.major}
+      {#if t.major && Math.abs(t.y) < 110}
         <text
           x="14"
           y={t.y + 3}
@@ -180,21 +214,38 @@
     {/if}
   </g>
 
-  <!-- Current readout box -->
-  <rect x="0" y="-10" width="44" height="20" fill="var(--pfd-bg, #0a0c10)" stroke="var(--pfd-fg, #ffffff)" stroke-width="1.2" />
+  <!-- Current-altitude readout box. Hundreds-and-up portion is static
+       text on the left; the tens-pair lives in a drum window on the
+       right that scrolls smoothly in 20 ft steps. -->
+  <rect x="0" y="-10" width="56" height="20" fill="var(--pfd-bg, #0a0c10)" stroke="var(--pfd-fg, #ffffff)" stroke-width="1.2" />
+  <!-- Static hundreds-and-up. Right-anchored so the rightmost char sits
+       just left of the drum window. -->
   <text
-    x="40"
+    x="34"
     y="4"
     text-anchor="end"
     font-size="13"
     font-weight="700"
     fill="var(--pfd-fg, #ffffff)"
-  >{Math.round(alt)}</text>
+  >{altHundredsText}</text>
+  <!-- Drum window for the tens-pair. -->
+  <defs>
+    <clipPath id="alt-tens-clip">
+      <rect x="35" y="-9" width="20" height="18" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#alt-tens-clip)">
+    <g transform="translate(0 {-altFrac * 14})">
+      <text x="53" y="-9" text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{fmtTens(altTensPrev)}</text>
+      <text x="53" y="5"  text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{fmtTens(altTensNow)}</text>
+      <text x="53" y="19" text-anchor="end" font-size="13" font-weight="700" fill="var(--pfd-fg, #ffffff)">{fmtTens(altTensNext)}</text>
+    </g>
+  </g>
 
   <!-- Baro readout below tape -->
   <text
     x="6"
-    y="115"
+    y="138"
     font-size="9"
     fill="var(--pfd-magenta, #d946ef)"
   >{baroText} {baroUnit === 'inHg' ? 'IN' : 'HPA'}</text>
