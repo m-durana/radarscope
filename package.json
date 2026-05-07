@@ -1,12 +1,13 @@
 {
   "name": "radarscope",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Aviation-themed SVG primitives: top-down radar scopes, aircraft blips, runways, waypoints. Framework-agnostic core + Svelte 5 adapter.",
   "type": "module",
   "license": "MIT",
   "files": [
     "dist",
     "src/svelte",
+    "src/core",
     "README.md"
   ],
   "exports": {
