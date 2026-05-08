@@ -12,3 +12,4 @@ export { default as WindReadout } from './WindReadout.svelte';
 export { default as PFD } from './PFD.svelte';
 
 export type { FlightDirector, FmaState, SpeedBug } from './types.js';
+export type { FMACallout } from './FMAStrip.svelte';

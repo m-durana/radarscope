@@ -1,6 +1,16 @@
 <script lang="ts">
   import { untrack } from 'svelte';
 
+  /** Optional teaching/illustration callout pointing at one column. The
+   *  label is rendered inside the SVG so it always fits and never clips. */
+  export interface FMACallout {
+    column: 'at' | 'lat' | 'vert' | 'app';
+    label: string;
+    tone?: 'good' | 'bad' | 'note';
+    /** Default 'above'. */
+    placement?: 'above' | 'below';
+  }
+
   interface Props {
     /** Autothrottle column: SPEED, THR, IDLE, RETARD, HOLD. */
     at: string;
@@ -15,9 +25,12 @@
     boxMs?: number;
     width?: number;
     height?: number;
+    /** Render a labeled leader pointing at one column. Pixel height
+     *  auto-grows to keep the strip itself the same size. */
+    callout?: FMACallout;
   }
 
-  let { at, lat, vert, app, boxMs = 10000, width = 320, height = 28 }: Props = $props();
+  let { at, lat, vert, app, boxMs = 10000, width = 320, height = 28, callout }: Props = $props();
 
   // Color hints per common FMA convention.
   function colorOf(label: string): string {
@@ -78,13 +91,59 @@
     { label: vert, x: 40, box: boxVert },
     { label: app, x: 120, box: boxApp },
   ]);
+
+  // Callout geometry. The strip lives in viewBox y=-14..14 (height 28).
+  // When a callout is present, we extend the viewBox vertically by
+  // CALLOUT_PAD on the chosen side, render a leader from the column edge
+  // out to a label, and grow the rendered pixel height proportionally so
+  // the strip itself stays the same size.
+  const CALLOUT_PAD = 36;
+  const COL_X = { at: -120, lat: -40, vert: 40, app: 120 } as const;
+  // Horizontal extra space for end columns so long labels can extend
+  // past the strip edge without being clipped by the viewBox.
+  const COL_H_EXTRA: Record<'at' | 'lat' | 'vert' | 'app', { left: number; right: number }> = {
+    at:   { left: 80, right: 0 },
+    lat:  { left: 0,  right: 0 },
+    vert: { left: 0,  right: 0 },
+    app:  { left: 0,  right: 80 },
+  };
+
+  const calloutGeom = $derived.by(() => {
+    if (!callout) return null;
+    const placement = callout.placement ?? 'above';
+    const tone = callout.tone ?? 'note';
+    const color = tone === 'good' ? 'var(--pfd-vref, #16a34a)'
+                : tone === 'bad'  ? 'var(--pfd-amber, #ffb000)'
+                : 'var(--pfd-fg, #ffffff)';
+    const cx = COL_X[callout.column];
+    const above = placement === 'above';
+    // Leader: start just outside the strip edge, end near label baseline.
+    const leaderY1 = above ? -14 : 14;
+    const leaderY2 = above ? -14 - (CALLOUT_PAD - 12) : 14 + (CALLOUT_PAD - 12);
+    const labelY = above ? -14 - (CALLOUT_PAD - 8) : 14 + (CALLOUT_PAD - 4);
+    return { cx, above, color, leaderY1, leaderY2, labelY };
+  });
+
+  const vb = $derived.by(() => {
+    if (!callout) return { x: -160, y: -14, w: 320, h: 28 };
+    const above = (callout.placement ?? 'above') === 'above';
+    const extras = COL_H_EXTRA[callout.column];
+    const x = -160 - extras.left;
+    const w = 320 + extras.left + extras.right;
+    const y = -14 - (above ? CALLOUT_PAD : 0);
+    const h = 28 + CALLOUT_PAD;
+    return { x, y, w, h };
+  });
+
+  const renderHeight = $derived(callout ? Math.round(height * (vb.h / 28)) : height);
+  const renderWidth = $derived(callout ? Math.round(width * (vb.w / 320)) : width);
 </script>
 
 <svg
   class="fma"
-  {width}
-  {height}
-  viewBox="-160 -14 320 28"
+  width={renderWidth}
+  height={renderHeight}
+  viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
   xmlns="http://www.w3.org/2000/svg"
   aria-label="Flight mode annunciator"
 >
@@ -116,6 +175,23 @@
       fill={colorOf(c.label)}
     >{c.label}</text>
   {/each}
+
+  {#if callout && calloutGeom}
+    {@const g = calloutGeom}
+    <line
+      x1={g.cx} y1={g.leaderY1}
+      x2={g.cx} y2={g.leaderY2}
+      stroke={g.color} stroke-width="0.6" opacity="0.85"
+    />
+    <circle cx={g.cx} cy={g.leaderY1} r="1.4" fill={g.color} />
+    <text
+      x={g.cx} y={g.labelY}
+      text-anchor="middle"
+      font-size="9"
+      font-weight="600"
+      fill={g.color}
+    >{callout.label}</text>
+  {/if}
 </svg>
 
 <style>
